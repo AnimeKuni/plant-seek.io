@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <link rel="stylesheet" href="static/styles/filtr.css">
+    <link rel="stylesheet" href="static/styles/search.css">
+    <link rel="stylesheet" href="static/styles/ai.css">
+    <link rel="stylesheet" href="static/styles/navbar.css">
+    <link rel="stylesheet" href="static/styles/form-media.css">
+    <link rel="stylesheet" href="static/styles/main-container.css">
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="nav-list">
+            <a href="plantid.html">ЗелёныйПомощник</a>
+            <button id="ai-search-button">AI-поиск</button>
+        </div>
+    </div>
+    <div id="ai-search-container" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+        <h3>Загрузите фото растения</h3>
+        <input type="file" id="plant-image-input" accept="image/*" />
+        <button id="upload-btn">Отправить</button>
+        <div id="response-result" style="margin-top: 10px;">Здесь будет результат распознавания</div>
+    </div>
+    <div class="search-container" style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="search-input" placeholder="Введите название растения"
+            style="padding: 8px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; flex: 1; transition: border-color 0.3s;">
+        <button id="search-btn"
+            style="padding: 8px 16px; font-size: 16px; border-radius: 4px; border: none; background-color: #4CAF50; color: white; cursor: pointer; transition: background-color 0.3s;">
+            Искать
+        </button>
+    </div>
+    <div class="filters-block">
+        <div class="filters-header">
+            <div class="search-title">Фильтр поиска</div>
+            <button id="resetFiltersBtn">Сброс фильтров</button>
+        </div>
+        <div class="filters-rows">
+            <div class="filter-column">
+                <h3>Полив</h3>
+                <select class="filter" data-filter="poliv">
+                    <option value="">Все</option>
+                    <option value="умеренный">Умеренный</option>
+                    <option value="частый">Частый</option>
+                    <option value="редкий">Редкий</option>
+                </select>
+            </div>
+            <div class="filter-column">
+                <h3>Размер</h3>
+                <select class="filter" data-filter="size">
+                    <option value="">Все</option>
+                    <option value="крупный">Крупный</option>
+                    <option value="средний">Средний</option>
+                    <option value="маленький">Маленький</option>
+                </select>
+            </div>
+            <div class="filter-column">
+                <h3>Освещение</h3>
+                <select class="filter" data-filter="light">
+                    <option value="">Все</option>
+                    <option value="много света">Много света</option>
+                    <option value="полутень">Полутень</option>
+                    <option value="тень">Тень</option>
+                </select>
+            </div>
+            <div class="filter-column">
+                <h3>Сложность</h3>
+                <select class="filter" data-filter="difficulty">
+                    <option value="">Все</option>
+                    <option value="сложный">Сложный</option>
+                    <option value="средний">Средний</option>
+                    <option value="простой">Простой</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-container"></div>
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modalTitle">Название растения</h2>
+            <h3 id="modalLatin">Название на латинском</h3>
+            <p id="modalDescription">Подробное описание растения.</p>
+            <div>
+                <h4>Фильтры:</h4>
+                <ul>
+                    <li>Полив: <span id="filterPoliv"></span></li>
+                    <li>Размер: <span id="filterSize"></span></li>
+                    <li>Освещение: <span id="filterLight"></span></li>
+                    <li>Сложность: <span id="filterDifficulty"></span></li>
+                </ul>
+            </div>
+            <div id="extraDetails" style="display: none; margin-top: 20px;">
+                <h4>Дополнительная информация:</h4>
+                <div id="modalAllergy">
+                    <strong>Аллергия:</strong> <span></span>
+                </div>
+                <div id="modalAnimals" style="margin-top: 10px;">
+                    <strong>Животные:</strong> <span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="static/js/plants-data.js"></script>
+    <script>
+
+        if (typeof plantsData === 'undefined') {
+            console.error('Данные о растениях не загружены!');
+            document.getElementById('response-result').innerHTML = 'Данные не загружены.';
+        }
+
+        const filters = {
+            poliv: '',
+            size: '',
+            light: '',
+            difficulty: ''
+        };
+
+        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+            filters.poliv = '';
+            filters.size = '';
+            filters.light = '';
+            filters.difficulty = '';
+            document.querySelectorAll('.filter').forEach(select => {
+                select.value = '';
+            });
+            applyFilters();
+        });
+
+        document.querySelectorAll('.filter').forEach(select => {
+            select.addEventListener('change', () => {
+                const filterName = select.getAttribute('data-filter');
+                filters[filterName] = select.value;
+                applyFilters();
+            });
+        });
+
+        document.querySelectorAll('.more-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const card = button.closest('.card');
+                const title = card.querySelector('h2').textContent;
+                const description = card.querySelector('p:nth-of-type(2)').textContent;
+                const latinText = card.querySelector('.latinski').textContent;
+                const params = {};
+                card.querySelectorAll('.card-params p').forEach(p => {
+                    const paramName = p.firstChild.textContent.trim().replace(':', '');
+                    const paramValue = p.querySelector('span').textContent;
+                    params[paramName] = paramValue;
+                });
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalLatin').textContent = latinText;
+                document.getElementById('modalDescription').textContent = description;
+                document.getElementById('filterPoliv').textContent = params['Полив'];
+                document.getElementById('filterSize').textContent = params['Размер'];
+                document.getElementById('filterLight').textContent = params['Освещение'];
+                document.getElementById('filterDifficulty').textContent = params['Сложность'];
+                document.getElementById('myModal').style.display = 'flex';
+            });
+        });
+
+        document.querySelector('.close-btn').addEventListener('click', function () {
+            document.getElementById('myModal').style.display = 'none';
+        });
+
+
+        window.onclick = function (event) {
+            if (event.target == document.getElementById('myModal')) {
+                document.getElementById('myModal').style.display = 'none';
+            }
+        };
+
+        document.getElementById('ai-search-button').addEventListener('click', function () {
+            const container = document.getElementById('ai-search-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        });
+
+        const plantIdApiKey = 'teS2ikuziYvds8GNwtlc13bw9WWiieR8LOUWDKWaRWzG8JrJlp';
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ai-search-container').style.display = 'block';
+        });
+
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('plant-image-input');
+            const file = fileInput.files[0];
+            const resultDiv = document.getElementById('response-result');
+            if (!file) {
+                alert('Пожалуйста, выберите изображение.');
+                return;
+            }
+            resultDiv.innerText = 'Обработка изображения...';
+            try {
+                const imageBase64 = await fileToBase64(file);
+                const plantName = await sendToPlantId(imageBase64);
+
+                if (plantName) {
+                    const descriptionData = await getPlantDescription(plantName);
+                    if (descriptionData) {
+                        const descriptionText = descriptionData.description || 'Описание недоступно.';
+                        resultDiv.innerText = `Растение: ${plantName}\nОписание: ${descriptionText}`;
+                    } else {
+                        resultDiv.innerText = `Растение: ${plantName}. Не удалось получить описание.`;
+                    }
+                } else {
+                    resultDiv.innerText = 'Не удалось распознать растение.';
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerText = 'Произошла ошибка при распознавании.';
+            }
+        });
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function applyFilters() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                const poliv = card.querySelector('.param-poliv').textContent.trim().toLowerCase();
+                const size = card.querySelector('.param-size').textContent.trim().toLowerCase();
+                const light = card.querySelector('.param-light').textContent.trim().toLowerCase();
+                const difficulty = card.querySelector('.param-difficulty').textContent.trim().toLowerCase();
+
+                const filtersPoliv = filters.poliv.trim().toLowerCase();
+                const filtersSize = filters.size.trim().toLowerCase();
+                const filtersLight = filters.light.trim().toLowerCase();
+                const filtersDifficulty = filters.difficulty.trim().toLowerCase();
+
+                const matchPoliv = !filters.poliv || filtersPoliv === poliv;
+                const matchSize = !filters.size || filtersSize === size;
+                const matchLight = !filters.light || filtersLight === light;
+                const matchDifficulty = !filters.difficulty || filtersDifficulty === difficulty;
+
+                if (matchPoliv && matchSize && matchLight && matchDifficulty) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        async function sendToPlantId(base64Image) {
+            const response = await fetch('https://api.plant.id/v2/identify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Api-Key': 'teS2ikuziYvds8GNwtlc13bw9WWiieR8LOUWDKWaRWzG8JrJlp'
+                },
+                body: JSON.stringify({
+                    images: [base64Image],
+                    modifiers: ["crops_simple"],
+                    plant_language: "en",
+                    plant_details: ["common_names", "url", "name_authority"]
+                })
+            });
+            const data = await response.json();
+            if (data.suggestions && data.suggestions.length > 0) {
+                const plantName = data.suggestions[0].plant_name || data.suggestions[0].plant_details?.name || null;
+                return plantName;
+            } else {
+                return null;
+            }
+        }
+
+        async function getPlantDescription(plantName) {
+            const response = await fetch('http://localhost:8080/api/plant', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ plantName })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Ответ модели:', data);
+                return data;
+            } else {
+                console.error('Ошибка при запросе к серверу');
+                return null;
+            }
+        }
+
+        function searchPlantByName() {
+            const input = document.getElementById('search-input').value.trim().toLowerCase();
+            const plants = document.querySelectorAll('.card');
+            let found = false;
+
+            plants.forEach(card => {
+                card.style.display = '';
+                card.classList.remove('hidden');
+            });
+
+            if (input === "") {
+                document.getElementById('response-result').innerHTML = "";
+                return;
+            }
+
+            plants.forEach(card => {
+                const name = card.querySelector('h2').textContent.toLowerCase();
+
+                if (name.includes(input)) {
+                    card.style.display = 'block';
+                    found = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const resultDiv = document.getElementById('response-result');
+            if (!found) {
+                resultDiv.innerHTML = 'Растение с таким названием не найдено.';
+            } else {
+                resultDiv.innerHTML = "";
+            }
+        }
+
+        document.getElementById('search-btn').addEventListener('click', searchPlantByName);
+        document.getElementById('search-input').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                searchPlantByName();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof plantsData !== 'undefined') {
+                generateCards(plantsData);
+            }
+        });
+
+        function generateCards(data) {
+            const container = document.querySelector('.card-container');
+            data.forEach(plant => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                const img = document.createElement('img');
+                img.src = plant.image;
+                img.alt = 'Изображение';
+
+                const infoCard = document.createElement('div');
+                infoCard.className = 'info-card';
+
+                const title = document.createElement('h2');
+                title.textContent = plant.name;
+
+                const latin = document.createElement('p');
+                latin.className = 'latinski';
+                latin.textContent = plant.latin;
+
+                const desc = document.createElement('p');
+                desc.textContent = plant.description;
+
+                const paramsDiv = document.createElement('div');
+                paramsDiv.className = 'card-params';
+
+                const polivP = document.createElement('p');
+                polivP.innerHTML = `Полив: <span class="param-poliv">${plant.poliv}</span>`;
+                const sizeP = document.createElement('p');
+                sizeP.innerHTML = `Размер: <span class="param-size">${plant.size}</span>`;
+                const lightP = document.createElement('p');
+                lightP.innerHTML = `Освещение: <span class="param-light">${plant.light}</span>`;
+                const diffP = document.createElement('p');
+                diffP.innerHTML = `Сложность: <span class="param-difficulty">${plant.difficulty}</span>`;
+
+                paramsDiv.appendChild(polivP);
+                paramsDiv.appendChild(sizeP);
+                paramsDiv.appendChild(lightP);
+                paramsDiv.appendChild(diffP);
+
+                const btn = document.createElement('button');
+                btn.className = 'more-btn';
+                btn.textContent = 'Подробнее';
+
+                infoCard.appendChild(title);
+                infoCard.appendChild(latin);
+                infoCard.appendChild(desc);
+                infoCard.appendChild(paramsDiv);
+                infoCard.appendChild(btn);
+
+                card.appendChild(img);
+                card.appendChild(infoCard);
+
+                container.appendChild(card);
+
+                btn.addEventListener('click', () => {
+                    document.getElementById('modalTitle').textContent = plant.name;
+                    document.getElementById('modalLatin').textContent = plant.latin;
+                    document.getElementById('modalDescription').textContent = plant.description;
+                    document.getElementById('filterPoliv').textContent = plant.poliv;
+                    document.getElementById('filterSize').textContent = plant.size;
+                    document.getElementById('filterLight').textContent = plant.light;
+                    document.getElementById('filterDifficulty').textContent = plant.difficulty;
+
+                    const extraDetailsDiv = document.getElementById('extraDetails');
+                    extraDetailsDiv.style.display = 'block';
+
+                    document.querySelector('#modalAllergy span').textContent = plant.allergy || '';
+                    document.querySelector('#modalAnimals span').textContent = plant.animals || '';
+
+                    document.getElementById('myModal').style.display = 'flex';
+                });
+            });
+            applyFilters();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Количество карточек:', document.querySelectorAll('.card').length);
+            console.log('Фильтры подключены:', document.getElementById('search-input'));
+        });
+    </script>
+</body>
+
+</html>
