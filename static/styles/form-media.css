@@ -4,8 +4,8 @@
     }
     
     .card-container {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 15px !important;
     }
     
     .card-image {
@@ -29,8 +29,8 @@
     }
     
     .card-container {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
     }
     
     .card-image {
@@ -50,8 +50,8 @@
     }
     
     .card-container {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
     }
     
     .card-image {
