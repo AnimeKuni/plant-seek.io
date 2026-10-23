@@ -1,66 +1,55 @@
 @media (max-width: 1024px) {
-    .nav-list {
-        gap: 15px;
-    }
-    
-    .card-container {
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 15px !important;
-    }
-    
-    .card-image {
-        height: 180px;
-    }
+  .card-container {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+    gap: 16px !important;
+  }
+  .card img {
+    height: 220px;
+  }
 }
 
 @media (max-width: 768px) {
-    .nav-list {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .filters-rows {
-        gap: 15px;
-    }
-    
-    .filter-column {
-        min-width: 100%;
-    }
-    
-    .card-container {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 15px !important;
-    }
-    
-    .card-image {
-        height: 160px;
-    }
+  .nav-list {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .filters-rows {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .filter-column {
+    min-width: 100%;
+  }
+  .card-container {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 14px !important;
+  }
+  .card img {
+    height: 200px;
+  }
 }
 
 @media (max-width: 480px) {
-    .nav-list a,
-    .nav-list button {
-        padding: 10px;
-        font-size: 1em;
-    }
-    
-    .filters-block {
-        padding: 15px;
-    }
-    
-    .card-container {
-        grid-template-columns: 1fr !important;
-        gap: 15px !important;
-    }
-    
-    .card-image {
-        height: 140px;
-    }
-    
-    .modal-content {
-        width: 90%;
-    }
+  .nav-list a,
+  .nav-list button {
+    width: 100%;
+    text-align: center;
+  }
+  .filters-block {
+    padding: 10px;
+  }
+  .card-container {
+    grid-template-columns: 1fr !important; /* на очень узких экранах — по одной карточке */
+    gap: 12px !important;
+  }
+  .card img {
+    height: 180px;
+  }
+  .modal-content {
+    width: 90%;
+    max-width: none;
+  }
 }
 
 input[type="file"] {
